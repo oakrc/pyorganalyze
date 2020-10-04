@@ -1,0 +1,15 @@
+#+TITLE: PyOrgAnalyze - Org-mode clocks analysis tool
+#+AUTHOR: Zhenkai Weng
+#+STARTUP: hideblocks overview
+
+Inspired by [[https://github.com/rksm/clj-org-analyzer][rksm/clj-org-analyzer]]
+* Features
+- [ ] Calendar
+- [ ] Supports archived headlines
+- [ ] View clocks
+- [ ] Per-category statistics
+- [ ] Tag-based statistics
+  + [ ] Hierarchical tags
+- [ ] Command-line interface
+- [ ] Web interface
+- [ ] Emacs plugin
