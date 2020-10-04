@@ -12,6 +12,7 @@ def parse_arguments():
 # TODO extract clocks recursively
 # TODO put extracted data in in-memory database
 # TODO allow saving in-memory database
+# ^ See: https://stackoverflow.com/questions/5831548/python-save-in-memory-sqlite
 # TODO querying functionalities
 # TODO web interface
 
