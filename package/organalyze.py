@@ -2,7 +2,7 @@
 import os
 import sys
 import argparse
-from organalyze.data import process_file
+from pyorganalyze.data import process_file, create_db, close_db
 from orgparse import load
 
 
@@ -33,18 +33,21 @@ def parse_arguments():
     return args
 
 
-
 if __name__ == '__main__':
     args = parse_arguments()
     if args.server:
         sys.exit("Web interface is under development")
 
-    org_fnames = args.files
-    for d in args.dirs:
-        for root, dirs, files in os.walk(d):
-            for f in files:
-                if f.endswith(".org"):
-                    org_fnames.append(os.path.join(root, f))
+    org_fnames = args.files or []
+    if args.dirs:
+        for d in args.dirs:
+            for root, dirs, files in os.walk(d):
+                for f in files:
+                    if f.endswith(".org"):
+                        org_fnames.append(os.path.join(root, f))
 
+    create_db()
     for org_fname in org_fnames:
         process_file(load(org_fname))
+
+    close_db()
