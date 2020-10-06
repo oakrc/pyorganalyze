@@ -19,9 +19,12 @@ CREATE TABLE IF NOT EXISTS headline_tags (
 
 CREATE TABLE IF NOT EXISTS clocks (
     headline_id         INTEGER NOT NULL,
-    clock_start         DATETIME NOT NULL,
-    clock_end           DATETIME NOT NULL,
-    duration_min        INTEGER NOT NULL,
+    dt_start            DATETIME NOT NULL,
+    dt_end              DATETIME NOT NULL,
+    duration_min        INTEGER NOT NULL
+                        GENERATED ALWAYS AS (CAST ((
+                            julianday(dt_end) - julianday(dt_start)
+                        ) * 24 * 60 * 60 AS INTEGER)) STORED,
 
     FOREIGN KEY (headline_id)
         REFERENCES headlines(id)

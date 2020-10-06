@@ -94,28 +94,23 @@ class OrgData:
                 clocks = []
                 # split the clock into multiple single-day ones
                 if clock.start.date() != clock.end.date():
-                    start = clock.start
-                    end = datetime.combine(clock.start.date(), time(23, 59))
-
-                    # TODO clean up
+                    clocks.append([headline_id, clock.start,
+                                   datetime.combine(clock.start.date(),
+                                                    time.max)])
+                    second = datetime.combine(clock.start.date()
+                                              + timedelta(days=1),
+                                              time.min)
+                    start = datetime.combine(second, time.min)
+                    end = datetime.combine(second, time.max)
                     while end < clock.end:
-                        clocks.append([
-                            headline_id, start, end,
-                            int((end - start).total_seconds() / 60)
-                        ])
-                        start = datetime.combine(start.date(), time(0, 0))
+                        clocks.append([headline_id, start, end])
                         start += timedelta(days=1)
                         end += timedelta(days=1)
-
-                    clocks.append([
-                        headline_id, start, clock.end,
-                        int((end - start).total_seconds() / 60)
-                    ])
+                    clocks.append([headline_id, start, clock.end])
                 else:
-                    clocks.append([headline_id, clock.start, clock.end,
-                                   int(clock.duration.total_seconds() / 60)])
+                    clocks.append([headline_id, clock.start, clock.end])
                 for c in clocks:
-                    self.query("INSERT INTO clocks VALUES (?,?,?,?)", c)
+                    self.query("INSERT INTO clocks VALUES (?,?,?)", c)
 
         for child in node.children:
             parents.append(node)
