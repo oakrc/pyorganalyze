@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-import os
-import sys
 import argparse
 from pyorganalyze.data import OrgData
 
@@ -18,16 +16,6 @@ def parse_arguments():
 
     if not (args.files or args.dirs):
         parser.error("No input files specified; use --files or --dirs")
-
-    if args.dirs:
-        for d in args.dirs:
-            if not os.path.isdir(d):
-                parser.error(d + ' is not a valid directory')
-
-    if args.files:
-        for f in args.files:
-            if not os.path.isfile(f):
-                parser.error(f + ' is not a valid file name')
 
     return args
 

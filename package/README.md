@@ -2,11 +2,10 @@
 The python package provides a CLI & web interface.
 
 # To-do
-- [ ] handle cmd-line arguments
-- [ ] parse org files
+- [x] handle cmd-line arguments
+- [x] parse org files
 - [ ] extract clocks recursively
 - [ ] put extracted data in in-memory database
-- [ ] allow saving in-memory database
-    - See: https://stackoverflow.com/questions/5831548/python-save-in-memory-sqlite
-- [ ] querying functionalities
+- [ ] [allow saving in-memory database](https://stackoverflow.com/questions/5831548/python-save-in-memory-sqlite)
+- [ ] statistics
 - [ ] web interface

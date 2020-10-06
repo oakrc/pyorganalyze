@@ -3,47 +3,54 @@ import os
 import regex
 import sqlite3
 from orgparse import load
+from datetime import timedelta, datetime, time
 
 
 class OrgData:
-    tag_hierarchy = defaultdict(set)
-    tag_ancestors = defaultdict(set)
-
     def __init__(self, save_to=':memory:'):
         self.db_path = save_to
+        self.tag_hierarchy = defaultdict(set)
+        self.tag_ancestors = defaultdict(set)
 
-        preexisting = os.path.isfile(db_path)
-        self.db = sqlite3.connect(db_path)
+        preexisting = os.path.isfile(self.db_path)
+        self.db = sqlite3.connect(self.db_path)
 
         # create db if no db exists
         if not preexisting:
-            cursor = self.db.cursor()
+            self.cursor = self.db.cursor()
             with open(os.path.join(
                     os.path.dirname(os.path.realpath(__file__)),
                     'database.sql')) as f:
-                cursor.executescript(f.read())
+                self.exec(f.read())
 
     def __del__(self):
-        """Close database connection."""
-        global db
-        global db_path
-        if db:
-            db.close()
-            db = None
-            db_path = None
+        """Close database connection"""
+        if self.db:
+            self.db.close()
+
+    def query(self, sql: str, args=[]):
+        """Run a single SQL query"""
+        if not self.cursor:
+            self.cursor = self.db.cursor()
+        return self.cursor.execute(sql, args)
+
+    def exec(self, sql: str):
+        """Execute SQL script"""
+        if not self.cursor:
+            self.cursor = self.db.cursor()
+        return self.cursor.executescript(sql)
 
     def save(self, filename=None):
         """Save in-memory database"""
-        if not db:
-            raise ValueError("No database connection.")
+        if not self.db:
+            raise ValueError("No database connection")
+        self.db.commit()
         if filename and self.db_path == ':memory:':
             # TODO
             raise NotImplementedError
-        else:
-            self.db.commit()
 
-    def build_tag_ancestors(self, parents=[]):
-        """Build tag_ancestors (inefficiently)."""
+    def __build_tag_ancestors(self, parents=[]):
+        """Build tag_ancestors (inefficiently)"""
         it = None
         cur = None
         if parents.len:
@@ -53,36 +60,92 @@ class OrgData:
         else:
             it = self.tag_hierarchy.keys()
         for tag in it:
-            self.build_tag_ancestors(
+            self.__build_tag_ancestors(
                 (parents + [tag]) if parents.len else [cur])
 
-    def process_file(self, filename):
-        """Process a parsed org file and save into database."""
-        # Scan text before first heading
-        # to find tag hierarchies.
-        # Tag hierarchies are preserved across all files
-        # to keep the program simple
+    def __make_hierarchichal(self, tags: set) -> set:
+        """Inherit tags from tag_hierarchy"""
+        new_tags = set()
+        for tag in tags:
+            new_tags.update(self.tag_ancestors[tag])
+        return new_tags
+
+    def __walk_org_node(self, filename, node, parents=[]):
+        """Recursively save headlines with clocks into db"""
+        if node.clock.len:
+            headline = [filename,
+                        ' > '.join(parents.heading),
+                        node.todo,
+                        node.heading,
+                        node.properties.get('CATEGORY')]
+            self.query("INSERT INTO headlines "
+                       "(filename,parent,todo,heading,category)"
+                       " VALUES (?,?,?,?,?)", headline)
+
+            headline_id = self.cursor.lastrowid
+
+            # save tags
+            for tag in self.__make_hierarchichal(node.tags):
+                self.query("INSERT INTO headline_tags VALUES (?,?)",
+                           [headline_id, tag])
+
+            # save clocks
+            for clock in node.clock:
+                clocks = []
+                # split the clock into multiple single-day ones
+                if clock.start.date() != clock.end.date():
+                    start = clock.start
+                    end = datetime.combine(clock.start.date(), time(23, 59))
+
+                    # TODO clean up
+                    while end < clock.end:
+                        clocks.append([
+                            headline_id, start, end,
+                            int((end - start).total_seconds() / 60)
+                        ])
+                        start = datetime.combine(start.date(), time(0, 0))
+                        start += timedelta(days=1)
+                        end += timedelta(days=1)
+
+                    clocks.append([
+                        headline_id, start, clock.end,
+                        int((end - start).total_seconds() / 60)
+                    ])
+                else:
+                    clocks.append([headline_id, clock.start, clock.end,
+                                   int(clock.duration.total_seconds() / 60)])
+                for c in clocks:
+                    self.query("INSERT INTO clocks VALUES (?,?,?,?)", c)
+
+        for child in node.children:
+            parents.append(node)
+            self.__walk_org_node(filename, child, parents)
+
+    def process_file(self, filename: str):
+        """Process an org file and save into database"""
+        # Scan text before first heading to find tag hierarchies.
+        # Tag hierarchies are preserved across all files to keep
+        # the program simple.
         org_file = load(filename)
         if not self.db:
             raise ValueError('No database connection')
         for line in str(org_file):
             m = regex.match(
-                r"^#\+tags:\s+[\[{]\s+([A-Za-z_@]+)\s+:\s+(?:([A-Za-z_@]+)\s+)+[\]}]",
+                r"^#\+tags:\s+[\[{]\s+([a-z_@]+)\s+:\s+(?:([a-z_@]+)\s+)+[\]}]",
                 line,
                 regex.I)
             if m:
                 parent_tag = m.groups()[0]
                 self.tag_hierarchy[parent_tag] = m.captures(2)
-        self.build_tag_ancestors()
+        self.__build_tag_ancestors()
 
-        # recursively scan for headlines with clocks
-        # and save them into database
-        cursor = self.db.cursor()
-        # TODO
-        raise NotImplementedError
+        for node in org_file.children:
+            self.__walk_org_node(filename, node)
+
+        self.save()
 
     def process_files(self, filenames=[], dirs=[]):
-        """Process files and directories (recursively)."""
+        """Process files and directories (recursively)"""
         if not (filenames or dirs):
             raise ValueError('No input (filename / dirs) specified')
         for d in dirs:
