@@ -6,7 +6,7 @@ The python package provides a CLI & web interface.
 - [x] parse org files
 - [X] extract clocks recursively
 - [X] put extracted data in in-memory database
-- [ ] [allow saving & loading in-memory database](https://stackoverflow.com/questions/5831548/python-save-in-memory-sqlite)
+- [X] allow saving & loading in-memory database
 - [ ] statistics
 - [ ] web interface
     - [ ] color coding
