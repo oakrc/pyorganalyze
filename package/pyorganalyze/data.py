@@ -43,11 +43,11 @@ class OrgData:
         """Build tag_ancestors (inefficiently)"""
         # assuming there are no loops
         if len(parents):
-            cur = self.tag_hierarchy[parents[-1]]
+            cur = parents[-1]
             it = self.tag_hierarchy[cur]
             self.tag_ancestors[cur].update(parents[:-1])
         else:
-            it = self.tag_hierarchy.keys()
+            it = self.tag_hierarchy.copy().keys()
         for tag in it:
             self.__build_tag_ancestors(parents + [tag])
 
@@ -78,7 +78,7 @@ class OrgData:
 
             headline_id = self.cursor.lastrowid
 
-            tags = node.tags + set((prop('ARCHIVE_ITAGS') or '').split(' '))
+            tags = node.tags | set((prop('ARCHIVE_ITAGS') or '').split(' '))
             self.__make_hierarchichal(tags)
             # save tags
             for tag in tags:
@@ -118,7 +118,7 @@ class OrgData:
         # Tag hierarchies are preserved across all files to keep
         # the program simple.
         org_file = load(filename)
-        for line in str(org_file):
+        for line in str(org_file).split('\n'):
             e = r"^#\+tags:\s+[\[{]\s+([a-z_@]+)\s+:\s+(?:([a-z_@]+)\s+)+[\]}]"
             m = regex.match(e, line, regex.I)
             if m:
