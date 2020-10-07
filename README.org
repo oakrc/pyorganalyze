@@ -5,7 +5,7 @@
 Inspired by [[https://github.com/rksm/clj-org-analyzer][rksm/clj-org-analyzer]]
 * Features
 - [ ] Calendar
-- [ ] Supports archived headlines
+- [X] Supports archived headlines
 - [ ] View clocks
 - [ ] Per-category statistics
 - [ ] Tag-based statistics

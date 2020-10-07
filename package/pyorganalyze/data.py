@@ -61,19 +61,27 @@ class OrgData:
     def __walk_org_node(self, filename, node, parents=[]):
         """Recursively save headlines with clocks into db"""
         if len(node.clock):
-            headline = [filename,
-                        ' > '.join(parents),
+            prop = node.properties.get
+            is_archived = prop('ARCHIVE_TIME') is not None
+            headline = [filename + ' ➤ ' + prop('ARCHIVE_FILE')
+                        if is_archived else filename,
+                        prop('ARCHIVE_OLPATH').replace('/', ' ➤ ')
+                        if is_archived else ' ➤ '.join(parents),
                         node.todo,
                         node.heading,
-                        node.properties.get('CATEGORY')]
+                        prop('ARCHIVE_CATEGORY')
+                        if is_archived else prop('CATEGORY')
+                        ]
             self.query("INSERT INTO headlines "
                        "(filename,parent,todo,heading,category)"
                        " VALUES (?,?,?,?,?)", headline)
 
             headline_id = self.cursor.lastrowid
 
+            tags = node.tags + set((prop('ARCHIVE_ITAGS') or '').split(' '))
+            self.__make_hierarchichal(tags)
             # save tags
-            for tag in self.__make_hierarchichal(node.tags):
+            for tag in tags:
                 self.query("INSERT INTO headline_tags VALUES (?,?)",
                            [headline_id, tag])
 
@@ -111,10 +119,8 @@ class OrgData:
         # the program simple.
         org_file = load(filename)
         for line in str(org_file):
-            m = regex.match(
-                r"^#\+tags:\s+[\[{]\s+([a-z_@]+)\s+:\s+(?:([a-z_@]+)\s+)+[\]}]",
-                line,
-                regex.I)
+            e = r"^#\+tags:\s+[\[{]\s+([a-z_@]+)\s+:\s+(?:([a-z_@]+)\s+)+[\]}]"
+            m = regex.match(e, line, regex.I)
             if m:
                 parent_tag = m.groups()[0]
                 self.tag_hierarchy[parent_tag] = m.captures(2)
