@@ -51,8 +51,7 @@ class OrgData:
 
     def __build_tag_ancestors(self, parents=[]):
         """Build tag_ancestors (inefficiently)"""
-        it = None
-        cur = None
+        # assuming there are no loops
         if len(parents):
             cur = self.tag_hierarchy[parents[-1]]
             it = self.tag_hierarchy[cur]
@@ -60,8 +59,7 @@ class OrgData:
         else:
             it = self.tag_hierarchy.keys()
         for tag in it:
-            self.__build_tag_ancestors(
-                (parents + [tag]) if len(parents) else [cur])
+            self.__build_tag_ancestors(parents + [tag])
 
     def __make_hierarchichal(self, tags: set) -> set:
         """Inherit tags from tag_hierarchy"""
