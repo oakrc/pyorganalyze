@@ -34,10 +34,14 @@ class OrgData:
 
     def save(self, filename=None):
         """Save in-memory database"""
-        self.db.commit()
         if filename and self.db_path == ':memory:':
-            # TODO
-            raise NotImplementedError
+            saved = sqlite3.connect(filename)
+            self.db_path = filename
+            with saved:
+                self.db.backup(saved)
+            self.db.close()
+            self.db = saved
+        self.db.commit()
 
     def __build_tag_ancestors(self, parents=[]):
         """Build tag_ancestors (inefficiently)"""
