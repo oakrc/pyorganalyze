@@ -135,7 +135,7 @@ class OrgData:
         """Process files and directories (recursively)"""
         filenames = filenames or []
         dirs = dirs or []
-        if not (filenames or dirs):
+        if len(filenames) + len(dirs) == 0:
             raise ValueError('No input (filename / dirs) specified')
         for d in dirs:
             for root, _, files in os.walk(d):
