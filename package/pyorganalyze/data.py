@@ -12,16 +12,12 @@ class OrgData:
         self.tag_hierarchy = defaultdict(set)
         self.tag_ancestors = defaultdict(set)
 
-        preexisting = os.path.isfile(self.db_path)
         self.db = sqlite3.connect(self.db_path)
-
-        # create db if no db exists
-        if not preexisting:
-            self.cursor = self.db.cursor()
-            with open(os.path.join(
-                    os.path.dirname(os.path.realpath(__file__)),
-                    'database.sql')) as f:
-                self.exec(f.read())
+        self.cursor = self.db.cursor()
+        with open(os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                'database.sql')) as f:
+            self.exec(f.read())
 
     def __del__(self):
         """Close database connection"""
@@ -30,20 +26,14 @@ class OrgData:
 
     def query(self, sql: str, args=[]):
         """Run a single SQL query"""
-        if not self.cursor:
-            self.cursor = self.db.cursor()
         return self.cursor.execute(sql, args)
 
     def exec(self, sql: str):
         """Execute SQL script"""
-        if not self.cursor:
-            self.cursor = self.db.cursor()
         return self.cursor.executescript(sql)
 
     def save(self, filename=None):
         """Save in-memory database"""
-        if not self.db:
-            raise ValueError("No database connection")
         self.db.commit()
         if filename and self.db_path == ':memory:':
             # TODO
@@ -120,8 +110,6 @@ class OrgData:
         # Tag hierarchies are preserved across all files to keep
         # the program simple.
         org_file = load(filename)
-        if not self.db:
-            raise ValueError('No database connection')
         for line in str(org_file):
             m = regex.match(
                 r"^#\+tags:\s+[\[{]\s+([a-z_@]+)\s+:\s+(?:([a-z_@]+)\s+)+[\]}]",
