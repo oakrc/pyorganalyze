@@ -53,7 +53,7 @@ class OrgData:
         """Build tag_ancestors (inefficiently)"""
         it = None
         cur = None
-        if parents.len:
+        if len(parents):
             cur = self.tag_hierarchy[parents[-1]]
             it = self.tag_hierarchy[cur]
             self.tag_ancestors[cur].update(parents[:-1])
@@ -61,7 +61,7 @@ class OrgData:
             it = self.tag_hierarchy.keys()
         for tag in it:
             self.__build_tag_ancestors(
-                (parents + [tag]) if parents.len else [cur])
+                (parents + [tag]) if len(parents) else [cur])
 
     def __make_hierarchichal(self, tags: set) -> set:
         """Inherit tags from tag_hierarchy"""
@@ -72,9 +72,9 @@ class OrgData:
 
     def __walk_org_node(self, filename, node, parents=[]):
         """Recursively save headlines with clocks into db"""
-        if node.clock.len:
+        if len(node.clock):
             headline = [filename,
-                        ' > '.join(parents.heading),
+                        ' > '.join(parents),
                         node.todo,
                         node.heading,
                         node.properties.get('CATEGORY')]
@@ -113,7 +113,7 @@ class OrgData:
                     self.query("INSERT INTO clocks VALUES (?,?,?)", c)
 
         for child in node.children:
-            parents.append(node)
+            parents.append(node.heading)
             self.__walk_org_node(filename, child, parents)
 
     def process_file(self, filename: str):
@@ -141,6 +141,8 @@ class OrgData:
 
     def process_files(self, filenames=[], dirs=[]):
         """Process files and directories (recursively)"""
+        filenames = filenames or []
+        dirs = dirs or []
         if not (filenames or dirs):
             raise ValueError('No input (filename / dirs) specified')
         for d in dirs:
